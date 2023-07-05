@@ -36,8 +36,6 @@ serve(async (req: Request) => {
 
   const responseBody = await response.json();
 
-  console.log(responseBody);
-
   return new Response(null, {
     status: 201,
   });
