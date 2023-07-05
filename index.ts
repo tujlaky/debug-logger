@@ -34,7 +34,9 @@ serve(async (req: Request) => {
     }),
   });
 
-  console.log(response);
+  const responseBody = await response.json();
+
+  console.log(responseBody);
 
   return new Response(null, {
     status: 201,
