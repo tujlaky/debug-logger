@@ -22,6 +22,20 @@ serve(async (req: Request) => {
 
   await redis.hset("logs", { [key]: body });
 
+  const kafkaUrl = Deno.env.get("UPSTASH_KAFKA_REST_URL")!;
+  const kafkaToken = Deno.env.get("UPSTASH_KAFKA_TOKEN")!;
+
+  const response = await fetch(`${kafkaUrl}/produce/logs`, {
+    headers: { Authorization: `Basic ${kafkaToken}` },
+    method: "POST",
+    body: JSON.stringify({
+      key,
+      value: body,
+    }),
+  });
+
+  console.log(response);
+
   return new Response(null, {
     status: 201,
   });
