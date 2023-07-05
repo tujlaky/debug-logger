@@ -5,6 +5,10 @@ import { Kafka } from "https://deno.land/x/kafkasaur@v0.0.7/index.ts";
 serve(async (req: Request) => {
   const signature = req.headers.get("x-api-key")!;
 
+  if (req.method !== "POST") {
+    return new Response(undefined, { status: 404 });
+  }
+
   if (!signature || signature !== Deno.env.get("API_KEY")) {
     return new Response("Invalid signature", { status: 401 });
   }
