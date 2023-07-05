@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
-import { Redis } from "https://deno.land/x/upstash_redis/mod.ts";
-import { Kafka } from "npm:@upstash/kafka";
+import { Redis } from "https://deno.land/x/upstash_redis@v1.22.0/mod.ts";
+import { Kafka } from "https://deno.land/x/kafkasaur@v0.0.7/index.ts";
 
 serve(async (req: Request) => {
   const signature = req.headers.get("x-api-key")!;
@@ -10,9 +10,13 @@ serve(async (req: Request) => {
   }
 
   const kafka = new Kafka({
-    url: Deno.env.get("UPSTASH_KAFKA_REST_URL")!,
-    username: Deno.env.get("UPSTASH_KAFKA_REST_USERNAME")!,
-    password: Deno.env.get("UPSTASH_KAFKA_REST_PASSWORD")!,
+    brokers: [Deno.env.get("UPSTASH_KAFKA_BROKER_URL")!],
+    sasl: {
+      mechanism: "scram-sha-256",
+      username: Deno.env.get("UPSTASH_KAFKA_REST_USERNAME")!,
+      password: Deno.env.get("UPSTASH_KAFKA_REST_PASSWORD")!,
+    },
+    ssl: true,
   });
 
   const redis = new Redis({
@@ -27,7 +31,18 @@ serve(async (req: Request) => {
 
   const producer = kafka.producer();
 
-  await producer.produce("logs", body);
+  await producer.connect();
+
+  await producer.send({
+    topic: "logs",
+    messages: [
+      {
+        key,
+        value: body,
+        headers: { "correlation-id": `${Date.now()}` },
+      },
+    ],
+  });
 
   return new Response(null, {
     status: 201,
